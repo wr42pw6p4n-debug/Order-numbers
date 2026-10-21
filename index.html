@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KEPO</title>
+<meta name="apple-mobile-web-app-title" content="KEPO">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1f3a5f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1a1d23; --muted:#6b7280;
+    --accent:#1f3a5f; --accent-ink:#ffffff; --border:#e2e4e9;
+    --pend:#b45309; --pend-bg:#fef3c7; --ok:#15803d; --ok-bg:#dcfce7; --bad:#b91c1c; --bad-bg:#fee2e2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15171c; --card:#1f2229; --text:#e8e9ec; --muted:#9aa0ab; --border:#31353f; --accent:#3b6fb6;
+      --pend-bg:#3a2c0a; --ok-bg:#0f2e1a; --bad-bg:#3a1414; --pend:#f5b04a; --ok:#5ad483; --bad:#f08a8a;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+  .wrap{max-width:640px;margin:0 auto;padding:16px;}
+  .top{display:flex;align-items:center;justify-content:space-between;margin:4px 0 14px;}
+  h1{font-size:20px;margin:0;}
+  .who{font-size:12px;color:var(--muted);text-align:right;}
+  .linkbtn{background:none;border:none;color:var(--accent);font-weight:600;padding:0;cursor:pointer;font-size:12px;}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .tab{flex:1;padding:10px;text-align:center;border-radius:10px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:600;color:var(--muted);}
+  .tab.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;}
+  input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:16px;}
+  textarea{resize:vertical;min-height:70px;font-family:inherit;}
+  button{border:none;border-radius:8px;padding:10px 14px;font-weight:600;cursor:pointer;font-size:14px;}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);width:100%;margin-top:14px;}
+  button:disabled{opacity:.6;}
+  .btn-ok{background:var(--ok);color:#fff;}
+  .btn-bad{background:var(--bad);color:#fff;}
+  .row-actions{display:flex;gap:8px;margin-top:8px;}
+  .item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--card);}
+  .item h3{margin:0 0 4px;font-size:15px;}
+  .item p{margin:2px 0;font-size:13px;color:var(--muted);}
+  .badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;}
+  .badge.pending{background:var(--pend-bg);color:var(--pend);}
+  .badge.approved{background:var(--ok-bg);color:var(--ok);}
+  .badge.rejected{background:var(--bad-bg);color:var(--bad);}
+  .count{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px;margin-left:4px;}
+  .po{font-family:ui-monospace,monospace;font-weight:700;font-size:16px;color:var(--text);}
+  .muted{color:var(--muted);font-size:13px;}
+  .err{color:var(--bad);font-size:13px;margin:8px 0 0;}
+  .hidden{display:none !important;}
+  .section-title{font-size:13px;font-weight:700;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .login{margin-top:12vh;}
+  .login h1{text-align:center;font-size:28px;margin-bottom:4px;}
+  .login .sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="loginView" class="login hidden">
+    <h1>KEPO</h1>
+    <div class="sub">Key Engineering purchase orders</div>
+    <div class="card">
+      <label for="lEmail">Email</label>
+      <input id="lEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="none">
+      <label for="lPass">Password</label>
+      <input id="lPass" type="password" autocomplete="current-password">
+      <button class="btn-primary" id="loginBtn">Sign in</button>
+      <p class="err" id="loginErr"></p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="appView" class="hidden">
+    <div class="top">
+      <h1>KEPO</h1>
+      <div class="who"><span id="whoName"></span><br><button class="linkbtn" id="signOutBtn">Sign out</button></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tabReqBtn">New Request</div>
+      <div class="tab" id="tabMineBtn">My Requests</div>
+      <div class="tab hidden" id="tabAuthBtn">Authorise <span id="pendingBadge" class="count hidden"></span></div>
+    </div>
+
+    <!-- New request -->
+    <div id="requestView">
+      <div class="card">
+        <label for="fName">Engineer name</label>
+        <input id="fName">
+        <label for="fSite">Job / site reference</label>
+        <input id="fSite" placeholder="e.g. Unit 4, Riverside Depot">
+        <label for="fDesc">Description of parts / work</label>
+        <textarea id="fDesc" placeholder="What's being ordered and why"></textarea>
+        <label for="fValue">Estimated value (optional)</label>
+        <input id="fValue" placeholder="e.g. £120">
+        <button class="btn-primary" id="submitBtn">Send for authorisation</button>
+        <p class="muted" id="submitMsg"></p>
+      </div>
+    </div>
+
+    <!-- My requests -->
+    <div id="mineView" class="hidden">
+      <div id="mineList"><p class="muted">Loading…</p></div>
+    </div>
+
+    <!-- Authorise (master only) -->
+    <div id="authView" class="hidden">
+      <div class="section-title">Awaiting authorisation</div>
+      <div id="pendingList"><p class="muted">Loading…</p></div>
+      <div class="section-title">History</div>
+      <div id="historyList"></div>
+      <div class="section-title">Numbering</div>
+      <div class="card">
+        <p class="muted" id="counterInfo"></p>
+        <label for="counterInput">Last PO number already used (next one issued will be this + 1)</label>
+        <input id="counterInput" type="number" inputmode="numeric" min="0" placeholder="e.g. 10049">
+        <button class="btn-primary" id="counterBtn">Save starting point</button>
+        <p class="muted" id="counterMsg"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://eyerpokgadrgxticqzez.supabase.co";
+const SUPABASE_KEY = "sb_publishable_FsyUdlUOTgA51pkAy5pNiA_AsHqq6Ed";
+const PREFIX = "KE";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+
+let isAdmin = false;
+let me = null;
+let rows = [];
+let pollTimer = null;
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtDate(iso){
+  try { return new Date(iso).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  $('tabReqBtn').classList.toggle('active', t==='request');
+  $('tabMineBtn').classList.toggle('active', t==='mine');
+  $('tabAuthBtn').classList.toggle('active', t==='auth');
+  $('requestView').classList.toggle('hidden', t!=='request');
+  $('mineView').classList.toggle('hidden', t!=='mine');
+  $('authView').classList.toggle('hidden', t!=='auth');
+  if(t==='auth') loadCounter();
+}
+$('tabReqBtn').onclick = () => showTab('request');
+$('tabMineBtn').onclick = () => showTab('mine');
+$('tabAuthBtn').onclick = () => showTab('auth');
+
+/* ---------- auth ---------- */
+$('loginBtn').onclick = async () => {
+  const email = $('lEmail').value.trim();
+  const password = $('lPass').value;
+  $('loginErr').textContent = '';
+  if(!email || !password){ $('loginErr').textContent = 'Enter your email and password.'; return; }
+  $('loginBtn').disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  $('loginBtn').disabled = false;
+  if(error){ $('loginErr').textContent = 'Sign in failed. Check your email and password.'; return; }
+  $('lPass').value = '';
+  await startApp();
+};
+$('lPass').addEventListener('keydown', e => { if(e.key==='Enter') $('loginBtn').click(); });
+
+$('signOutBtn').onclick = async () => {
+  clearInterval(pollTimer);
+  await sb.auth.signOut();
+  showLogin();
+};
+
+function showLogin(){
+  $('appView').classList.add('hidden');
+  $('loginView').classList.remove('hidden');
+}
+
+async function startApp(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ showLogin(); return; }
+  me = session.user;
+
+  const adm = await sb.rpc('po_is_admin');
+  isAdmin = adm.data === true;
+
+  let name = '';
+  const prof = await sb.from('profiles').select('name').eq('id', me.id).maybeSingle();
+  if(prof.data && prof.data.name) name = prof.data.name;
+  name = name || (me.email || '').split('@')[0];
+
+  $('whoName').textContent = name + (isAdmin ? ' (master)' : '');
+  if(!$('fName').value) $('fName').value = name;
+  $('tabAuthBtn').classList.toggle('hidden', !isAdmin);
+
+  $('loginView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  showTab('request');
+
+  await refresh();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(refresh, 15000);
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && me) refresh(); });
+
+/* ---------- data ---------- */
+async function refresh(){
+  const { data, error } = await sb.from('po_requests')
+    .select('*').order('created_at', { ascending:false }).limit(300);
+  if(error){ return; }
+  rows = data || [];
+  render();
+}
+
+function render(){
+  const mine = rows.filter(r => r.requested_by === me.id);
+  $('mineList').innerHTML = mine.length === 0 ? '<p class="muted">No requests yet.</p>' :
+    mine.slice(0,40).map(r => `
+      <div class="item">
+        <h3>${esc(r.site_ref)}</h3>
+        <p>${esc(r.description)}</p>
+        <p><span class="badge ${r.status}">${r.status}</span>
+           ${r.po_number ? `<span class="po">${esc(r.po_number)}</span>` : ''}
+           <span> · ${fmtDate(r.created_at)}</span></p>
+      </div>`).join('');
+
+  if(!isAdmin) return;
+
+  const pending = rows.filter(r => r.status === 'pending').reverse();
+  const done = rows.filter(r => r.status !== 'pending').slice(0, 25);
+
+  const badge = $('pendingBadge');
+  if(pending.length){ badge.textContent = pending.length; badge.classList.remove('hidden'); }
+  else { badge.classList.add('hidden'); }
+  try { if(navigator.setAppBadge){ pending.length ? navigator.setAppBadge(pending.length) : navigator.clearAppBadge(); } } catch(e){}
+  document.title = pending.length ? `(${pending.length}) KEPO` : 'KEPO';
+
+  $('pendingList').innerHTML = pending.length === 0 ? '<p class="muted">Nothing waiting.</p>' :
+    pending.map(r => `
+      <div class="item">
+        <h3>${esc(r.engineer_name)} — ${esc(r.site_ref)}</h3>
+        <p>${esc(r.description)}</p>
+        ${r.est_value ? `<p>Est. value: ${esc(r.est_value)}</p>` : ''}
+        <p>${fmtDate(r.created_at)}</p>
+        <div class="row-actions">
+          <button class="btn-ok" data-act="approve" data-id="${esc(r.id)}">Approve</button>
+          <button class="btn-bad" data-act="reject" data-id="${esc(r.id)}">Reject</button>
+        </div>
+      </div>`).join('');
+
+  $('historyList').innerHTML = done.length === 0 ? '<p class="muted">Nothing yet.</p>' :
+    done.map(r => `
+      <div class="item">
+        <h3>${esc(r.engineer_name)} — ${esc(r.site_ref)}</h3>
+        <p><span class="badge ${r.status}">${r.status}</span>
+           ${r.po_number ? `<span class="po">${esc(r.po_number)}</span>` : ''}
+           <span> · ${fmtDate(r.decided_at)}</span></p>
+      </div>`).join('');
+}
+
+/* ---------- submit ---------- */
+$('submitBtn').onclick = async () => {
+  const msg = $('submitMsg');
+  const engineer_name = $('fName').value.trim();
+  const site_ref = $('fSite').value.trim();
+  const description = $('fDesc').value.trim();
+  const est_value = $('fValue').value.trim() || null;
+  if(!engineer_name || !site_ref || !description){ msg.textContent = 'Please fill in name, site reference and description.'; return; }
+  $('submitBtn').disabled = true;
+  const { error } = await sb.from('po_requests').insert({ engineer_name, site_ref, description, est_value });
+  $('submitBtn').disabled = false;
+  if(error){ msg.textContent = 'Could not send. Check your signal and try again.'; return; }
+  $('fSite').value = ''; $('fDesc').value = ''; $('fValue').value = '';
+  msg.textContent = 'Sent. Check My Requests to see your number once it is approved.';
+  await refresh();
+};
+
+/* ---------- approve / reject ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]');
+  if(!b) return;
+  const id = b.dataset.id;
+  b.disabled = true;
+  if(b.dataset.act === 'approve'){
+    const { data, error } = await sb.rpc('approve_po', { request_id: id });
+    if(error){ alert('Could not approve: ' + error.message); b.disabled = false; return; }
+  } else {
+    if(!confirm('Reject this request?')){ b.disabled = false; return; }
+    const { error } = await sb.rpc('reject_po', { request_id: id });
+    if(error){ alert('Could not reject: ' + error.message); b.disabled = false; return; }
+  }
+  await refresh();
+  loadCounter();
+});
+
+/* ---------- counter ---------- */
+async function loadCounter(){
+  if(!isAdmin) return;
+  const { data } = await sb.rpc('get_po_counter');
+  if(typeof data === 'number'){
+    $('counterInfo').textContent = `Last number issued: ${PREFIX}${data}. Next approval will issue ${PREFIX}${data + 1}.`;
+  }
+}
+$('counterBtn').onclick = async () => {
+  const v = parseInt($('counterInput').value, 10);
+  const msg = $('counterMsg');
+  if(isNaN(v) || v < 0){ msg.textContent = 'Enter a whole number.'; return; }
+  if(!confirm(`Set the last used number to ${PREFIX}${v}? The next approval will issue ${PREFIX}${v+1}.`)) return;
+  const { error } = await sb.rpc('set_po_counter', { last_used: v });
+  if(error){ msg.textContent = 'Could not save: ' + error.message; return; }
+  $('counterInput').value = '';
+  msg.textContent = 'Saved.';
+  loadCounter();
+};
+
+/* ---------- boot ---------- */
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) startApp(); else showLogin();
+})();
+</script>
+</body>
+</html>

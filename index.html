@@ -59,6 +59,8 @@
   .hidden{display:none !important;}
   .section-title{font-size:13px;font-weight:700;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
   .login{margin-top:12vh;}
+  .who-opt{display:block;width:100%;margin:0 0 10px;padding:16px;font-size:18px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;}
+  .who-opt:active{background:var(--accent);color:var(--accent-ink);}
   .login h1{text-align:center;font-size:28px;margin-bottom:4px;}
   .login .sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px;}
 </style>
@@ -80,11 +82,25 @@
     </div>
   </div>
 
+  <!-- WHO IS SIGNING IN -->
+  <div id="whoView" class="login hidden">
+    <h1>Who is signing in?</h1>
+    <div class="sub">Tap your name</div>
+    <div class="card">
+      <div id="whoList"></div>
+      <div id="whoOther" class="hidden">
+        <label for="whoOtherInput">Your name</label>
+        <input id="whoOtherInput" autocapitalize="words">
+        <button class="btn-primary" id="whoOtherBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
   <!-- APP -->
   <div id="appView" class="hidden">
     <div class="top">
       <h1>KEPO</h1>
-      <div class="who"><span id="whoName"></span><br><button class="linkbtn" id="signOutBtn">Sign out</button></div>
+      <div class="who"><span id="whoName"></span><br><button class="linkbtn" id="switchBtn">Not you?</button> · <button class="linkbtn" id="signOutBtn">Sign out</button></div>
     </div>
     <div class="tabs">
       <div class="tab active" id="tabReqBtn">New Request</div>
@@ -136,6 +152,8 @@
 const SUPABASE_URL = "https://eyerpokgadrgxticqzez.supabase.co";
 const SUPABASE_KEY = "sb_publishable_FsyUdlUOTgA51pkAy5pNiA_AsHqq6Ed";
 const PREFIX = "KE";
+// Names shown on the "Who is signing in?" screen. Edit this list to add or remove engineers.
+const ENGINEERS = ["Dave", "Martyn", "Maxine", "Rob"];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
@@ -190,6 +208,7 @@ $('signOutBtn').onclick = async () => {
 
 function showLogin(){
   $('appView').classList.add('hidden');
+  $('whoView').classList.add('hidden');
   $('loginView').classList.remove('hidden');
 }
 
@@ -206,8 +225,59 @@ async function startApp(){
   if(prof.data && prof.data.name) name = prof.data.name;
   name = name || (me.email || '').split('@')[0];
 
+  // A personal login (name is in the ENGINEERS list) is used as is.
+  // A shared login (e.g. keyengineeringstaff) asks "Who is signing in?" on this device.
+  const known = ENGINEERS.find(n => n.toLowerCase() === name.toLowerCase());
+  let who = known || null;
+  if(!who){
+    try { who = localStorage.getItem('kepo_who_' + me.id) || null; } catch(e){}
+  }
+  if(!who){
+    $('loginView').classList.add('hidden');
+    $('appView').classList.add('hidden');
+    showWhoPicker();
+    return;
+  }
+  enterApp(who);
+}
+
+function showWhoPicker(){
+  const list = $('whoList');
+  list.innerHTML = ENGINEERS.map(n => `<button class="who-opt" data-name="${esc(n)}">${esc(n)}</button>`).join('') +
+    `<button class="who-opt" data-name="__other">Someone else…</button>`;
+  $('whoOther').classList.add('hidden');
+  $('whoView').classList.remove('hidden');
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('.who-opt');
+  if(!b) return;
+  if(b.dataset.name === '__other'){
+    $('whoOther').classList.remove('hidden');
+    $('whoOtherInput').focus();
+    return;
+  }
+  chooseWho(b.dataset.name);
+});
+$('whoOtherBtn').onclick = () => {
+  const v = $('whoOtherInput').value.trim();
+  if(v) chooseWho(v);
+};
+function chooseWho(n){
+  try { localStorage.setItem('kepo_who_' + me.id, n); } catch(e){}
+  $('whoView').classList.add('hidden');
+  enterApp(n);
+}
+$('switchBtn').onclick = () => {
+  try { localStorage.removeItem('kepo_who_' + me.id); } catch(e){}
+  clearInterval(pollTimer);
+  $('appView').classList.add('hidden');
+  showWhoPicker();
+};
+
+async function enterApp(name){
   $('whoName').textContent = name + (isAdmin ? ' (master)' : '');
-  if(!$('fName').value) $('fName').value = name;
+  $('fName').value = name;
   $('tabAuthBtn').classList.toggle('hidden', !isAdmin);
 
   $('loginView').classList.add('hidden');

@@ -115,6 +115,8 @@
         <input id="fName">
         <label for="fSite">Job / site reference</label>
         <input id="fSite" placeholder="e.g. Unit 4, Riverside Depot">
+        <label for="fSupplier">Supplier (where it's being bought from)</label>
+        <input id="fSupplier" placeholder="e.g. RS Components, Screwfix">
         <label for="fDesc">Description of parts / work</label>
         <textarea id="fDesc" placeholder="What's being ordered and why"></textarea>
         <label for="fValue">Estimated value (optional)</label>
@@ -305,6 +307,7 @@ function render(){
     mine.slice(0,40).map(r => `
       <div class="item">
         <h3>${esc(r.site_ref)}</h3>
+        ${r.supplier ? `<p>Supplier: ${esc(r.supplier)}</p>` : ''}
         <p>${esc(r.description)}</p>
         <p><span class="badge ${r.status}">${r.status}</span>
            ${r.po_number ? `<span class="po">${esc(r.po_number)}</span>` : ''}
@@ -326,6 +329,7 @@ function render(){
     pending.map(r => `
       <div class="item">
         <h3>${esc(r.engineer_name)} — ${esc(r.site_ref)}</h3>
+        ${r.supplier ? `<p><strong>Supplier:</strong> ${esc(r.supplier)}</p>` : ''}
         <p>${esc(r.description)}</p>
         ${r.est_value ? `<p>Est. value: ${esc(r.est_value)}</p>` : ''}
         <p>${fmtDate(r.created_at)}</p>
@@ -339,6 +343,7 @@ function render(){
     done.map(r => `
       <div class="item">
         <h3>${esc(r.engineer_name)} — ${esc(r.site_ref)}</h3>
+        ${r.supplier ? `<p>Supplier: ${esc(r.supplier)}</p>` : ''}
         <p><span class="badge ${r.status}">${r.status}</span>
            ${r.po_number ? `<span class="po">${esc(r.po_number)}</span>` : ''}
            <span> · ${fmtDate(r.decided_at)}</span></p>
@@ -350,14 +355,15 @@ $('submitBtn').onclick = async () => {
   const msg = $('submitMsg');
   const engineer_name = $('fName').value.trim();
   const site_ref = $('fSite').value.trim();
+  const supplier = $('fSupplier').value.trim();
   const description = $('fDesc').value.trim();
   const est_value = $('fValue').value.trim() || null;
-  if(!engineer_name || !site_ref || !description){ msg.textContent = 'Please fill in name, site reference and description.'; return; }
+  if(!engineer_name || !site_ref || !supplier || !description){ msg.textContent = 'Please fill in name, site reference, supplier and description.'; return; }
   $('submitBtn').disabled = true;
-  const { error } = await sb.from('po_requests').insert({ engineer_name, site_ref, description, est_value });
+  const { error } = await sb.from('po_requests').insert({ engineer_name, site_ref, supplier, description, est_value });
   $('submitBtn').disabled = false;
   if(error){ msg.textContent = 'Could not send. Check your signal and try again.'; return; }
-  $('fSite').value = ''; $('fDesc').value = ''; $('fValue').value = '';
+  $('fSite').value = ''; $('fSupplier').value = ''; $('fDesc').value = ''; $('fValue').value = '';
   msg.textContent = 'Sent. Check My Requests to see your number once it is approved.';
   await refresh();
 };
